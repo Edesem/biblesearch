@@ -1,0 +1,17 @@
+html {
+  color-scheme: light dark;
+}
+
+.highlight {
+  color: red;
+  font-weight: bold;
+}
+
+.background {
+  background-color: #594545;
+}
+
+.text {
+  color: #FFF8EA;
+}
+

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+
+<html lang="en" data-bs-theme="light">
+
+  <head>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1, width=device-width">
+
+        <!-- bootstrap -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+        <link href="../../styles.css" rel="stylesheet">
+
+        <title>Bible search</title>
+        <link rel="icon" type="image/x-icon" href="../../favicon.ico"
+
+  </head>
+
+  <body class='container'>
+
+    <h1 class='text-center display-1'>
+      What does the Bible say?
+    </h1>
+    
+    <hr class="border border-primary border-2 opacity-75">
+
+    <br><br>
+
+
+    <div>
+
+      <form action="/" method="POST">
+
+        <select class="form-select" name="language" id="language">
+          <% languages.forEach((language)=> { %>
+          <option value="<%= language %>" <% if (previousLanguage === language) { %>selected<% } %>>
+            <%= formatLang(language) %> 
+          </option>
+          <% }); %>
+        </select>
+
+        <br><br>
+
+
+        <div class="form-floating mb-3">
+          <input class="form-control" autocomplete="off" type="text" name="book" value="<%= previousBook %>" id="book" placeholder="Book name">
+          <label for="book">Book</label>
+        </div>
+
+        <div class="form-floating mb-3">
+          <input class="form-control" autocomplete="off" type="text" name="chapter" value="<%= previousChapter %>" id="chapter" placeholder="Chapter">
+          <label for="chapter">Chapter</label>
+        </div>
+
+        <div class="form-floating mb-3">
+          <input class="form-control" autocomplete="off" type="text" name="verse" value="<%= previousVerse %>" id="verse" placeholder="Verse">
+          <label for="verse">Verse</label>
+        </div>
+
+        <div class="form-floating mb-3">
+          <input class="form-control" autocomplete="off" type="text" name="words" value="<%= previousWords %>" id="words" placeholder="Key words">
+          <label for="words">Key words</label>
+        </div>
+
+        <br>
+
+        <input class="btn btn-primary mb-3" type="submit" name="submit" placeholder="Submit">
+      </form>
+
+    <hr>
+
+    <div>
+      <%= verseAmount %> verses
+    </div>
+
+    </div>
+    <div id="searchResults">
+      
+      <ul>
+        <% verses.forEach((verse)=> { %>
+        <li style="font-size: 1rem;"> 
+          <strong> <%= bibleBooks[verse.Book] %>, <%= verse.Chapter %>:<%= verse.Versecount %> </strong> <%- highlightSearchResult(verse.verse, searchQuery) %>  
+        </li>
+        <% }); %>
+      </ul>
+
+    </div>
+
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+    <footer>
+      <p class="text-center link-opacity-75">
+        <a href="https://github.com/Edesem">Source code</a>
+      </p>
+    </footer>
+
+  </body>
+  <script src="../../scripts.js"></script>
+</html>
