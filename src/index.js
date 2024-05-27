@@ -8,7 +8,8 @@ const bodyParser = require('body-parser');
 // Define consts
 const app = express();
 const hostname = '127.0.0.1'
-const port = 3000
+//const port = 3000
+const PORT = process.env.PORT || 3030;
 
 // Define previous entries
 previousBook = '';
@@ -220,4 +221,8 @@ app.post('/', (req, res) => {
 
 
 /// Establish connection ///
-app.listen(process.env.PORT || 3000, () => console.log('App avaible on http://' + hostname + ':' + port));
+//app.listen(process.env.PORT || 3000, () => console.log('App available on http://' + hostname + ':' + port));
+
+app.listen(PORT, () => {
+  console.log(`server started on port ${PORT}`);
+});
