@@ -1,6 +1,7 @@
 # Bible Search
-#### Video Demo: https://youtu.be/kHLjc7vCNWg
-#### Description: A Bible web app
+## A Bible web app
+### [Live Demo](https://biblesearch.onrender.com)
+### [Video Demo](https://youtu.be/kHLjc7vCNWg)
 
 The Bible search web application you described is built using Node.js, SQLite3, HTML, and CSS (Bootstrap). Its purpose is to allow users to view and search the Bible in different languages, with the ability to specify specific content they are looking for.
 
