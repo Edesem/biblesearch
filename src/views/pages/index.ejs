@@ -45,7 +45,14 @@
 
 
         <div class="form-floating mb-3">
-          <input class="form-control" autocomplete="off" type="text" name="book" value="<%= previousBook %>" id="book" placeholder="Book name">
+          <select class="form-select" autocomplete="off" type="text" name="book" value="<%= previousBook %>" id="book" placeholder="Book name">
+           <% bibleBooksArray.forEach((book)=> { %>
+          <option value="<%= book %>" <% if (previousBook === book) { %>selected<% } %>>
+            <%= formatLang(book) %> 
+          </option>
+          <% }); %>
+          </select>           
+
           <label for="book">Book</label>
         </div>
 

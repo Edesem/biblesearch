@@ -32,6 +32,7 @@ fs.readdir('../databases/', (err, files) => {
   });
 });
 
+
 // Set engine
 app.set('view engine', 'ejs');
 
@@ -47,7 +48,8 @@ app.use(bodyParser.json());
 // Read biblical books into dictionary
 const bibleBooks = {};
 const bibleNumbers = {};
-const bibleBooksArray = [];
+bibleBooksArray = [];
+
 fs.readFile('books.txt', 'utf8', (err, data) => {
   if (err) {
     return console.error(err.message);
@@ -59,7 +61,7 @@ fs.readFile('books.txt', 'utf8', (err, data) => {
   bookTitles.forEach((title, index) => {
     const bookNumber = index;
 
-    // Set the two different dictionarties
+    // Set the two different dictionaries
     bibleBooks[bookNumber] = title.trim();
     bibleNumbers[title.trim()] = bookNumber;
     bibleBooksArray.push(title.trim())
@@ -224,5 +226,5 @@ app.post('/', (req, res) => {
 //app.listen(process.env.PORT || 3000, () => console.log('App available on http://' + hostname + ':' + port));
 
 app.listen(PORT, () => {
-  console.log(`server started on port ${PORT}`);
+  console.log(`server started on port http://${hostname}:${PORT}`);
 });
