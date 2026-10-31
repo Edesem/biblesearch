@@ -2,7 +2,7 @@
 
 Read and search the Bible in 17 languages, by reference or by word. Styled like a printed reference Bible, with light and dark themes.
 
-**[Live demo](https://searchthebible.vercel.app)** · [Video demo](https://youtu.be/kHLjc7vCNWg)
+**[Live demo](https://searchthebible.vercel.app)**
 
 ## Features
 
