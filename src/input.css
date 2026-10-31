@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+@source "./views";
+@source "./scripts.js";
+
+/* Dark is the default; `.dark` on <html> switches it on. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@font-face {
+  font-family: "EB Garamond";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/eb-garamond-latin-wght-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  font-style: italic;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/eb-garamond-latin-wght-italic.woff2") format("woff2");
+}
+
+/*
+  A reference Bible: one Garamond family, rubric red used only for what a
+  printer would rubricate (chapter numerals, verse numbers, hits, the ribbon),
+  hairline and double rules in place of boxes.
+  Dark = lamp-black page, light = India paper. Tokens swap per theme.
+*/
+@theme {
+  --font-serif: "EB Garamond", "Iowan Old Style", "Palatino Linotype", "Noto Serif", "Noto Serif Devanagari", "Noto Serif Bengali", "Noto Serif Tamil", "Noto Serif Telugu", Georgia, serif;
+
+  --color-ground: var(--ground);
+  --color-line: var(--line);
+  --color-field-line: var(--field-line);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rubric: var(--rubric);
+  --color-rubric-ink: var(--rubric-ink);
+  --color-mark: var(--mark);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: light;
+  --ground: oklch(95.5% 0.02 90);
+  --ink: oklch(22% 0.02 60);
+  --ink-soft: oklch(45% 0.02 70);
+  --line: oklch(82% 0.02 85);
+  --field-line: oklch(55% 0.02 80);
+  --rubric: oklch(46% 0.18 27);
+  --rubric-ink: oklch(97% 0.015 85);
+  --mark: oklch(88% 0.09 30 / 0.6);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --ground: oklch(15% 0.012 60);
+  --ink: oklch(90% 0.02 85);
+  --ink-soft: oklch(70% 0.02 80);
+  --line: oklch(30% 0.015 60);
+  --field-line: oklch(55% 0.02 80);
+  --rubric: oklch(66% 0.19 28);
+  --rubric-ink: oklch(15% 0.012 60);
+  --mark: oklch(66% 0.19 28 / 0.25);
+}
+
+@layer base {
+  html {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: 100%;
+    font-variant-numeric: oldstyle-nums;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--rubric);
+    color: var(--rubric-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--rubric);
+    outline-offset: 3px;
+  }
+
+  a {
+    text-underline-offset: 0.25em;
+  }
+
+  select,
+  input,
+  button {
+    font: inherit;
+  }
+}
+
+/* Small capitals, as running heads and labels are set in print */
+@utility caps {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+}
+
+@layer components {
+  /* Search hits, emitted by the server as <span class="highlight"> */
+  .highlight {
+    color: var(--rubric);
+    font-weight: 600;
+    background: var(--mark);
+    text-decoration: underline;
+    text-decoration-color: var(--rubric);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.18em;
+    border-radius: 0.15em;
+    padding: 0 0.1em;
+  }
+
+  /* Form slots are blanks on a ruled line, not boxes */
+  .slot-label {
+    @apply caps mb-1 block text-base text-ink-soft;
+  }
+
+  .field {
+    @apply block min-h-11 w-full rounded-none border-0 border-b border-field-line bg-transparent px-0.5 py-2 text-xl text-ink;
+    @apply placeholder:text-ink-soft placeholder:italic hover:border-ink focus:border-rubric;
+    transition: border-color 0.2s;
+  }
+
+  .rule-double {
+    border-top: 3px double var(--ink-soft);
+  }
+
+  .ribbon {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+    transform-origin: top;
+    animation: ribbon-drop 0.9s var(--ease-out-expo) both;
+  }
+}
+
+/* The page's one authored moment: the ribbon unrolls from the top edge */
+@keyframes ribbon-drop {
+  from {
+    transform: scaleY(0.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ribbon {
+    animation: none;
+  }
+}
+
+* {
+  scrollbar-color: var(--field-line) transparent;
+}

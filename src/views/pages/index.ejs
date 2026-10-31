@@ -1,108 +1,193 @@
-<!DOCTYPE html>
+<%
+  const href = (params) => '/?' + new URLSearchParams(params).toString() + '#results';
+  const dash = (value) => value.replace('-', '–');
 
-<html lang="en" data-bs-theme="light">
+  // "Genesis 1:1–12", "Psalms 23", or "All books"
+  let reference = query.book || 'All books';
+  if (query.chapter) reference += ' ' + dash(query.chapter);
+  if (query.verse) reference += (query.chapter ? ':' : ' verse ') + dash(query.verse);
 
+  const widen = [];
+  if (searched && verseAmount === 0 && !error) {
+    if (query.book && (query.chapter || query.verse)) {
+      widen.push({ label: 'Search all of ' + query.book, params: { book: query.book, words: query.words, language: query.language } });
+    }
+    if (query.book && query.words) {
+      widen.push({ label: 'Search every book for “' + query.words + '”', params: { words: query.words, language: query.language } });
+    }
+  }
+
+  const samples = [
+    { label: 'John 3:16', params: { book: 'John', chapter: '3', verse: '16', language: query.language } },
+    { label: 'Psalms 23', params: { book: 'Psalms', chapter: '23', language: query.language } },
+    { label: 'Genesis 1:1–5', params: { book: 'Genesis', chapter: '1', verse: '1-5', language: query.language } },
+    { label: '1 Corinthians 13', params: { book: '1 Corinthians', chapter: '13', language: query.language } }
+  ];
+%><!DOCTYPE html>
+<html lang="en" class="dark">
   <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+    <meta name="color-scheme" content="dark light">
+    <title>Bible search</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
-        <meta charset="utf-8">
-        <meta name="viewport" content="initial-scale=1, width=device-width">
+    <!-- Theme before first paint: the visitor's saved choice, else the device setting, else dark -->
+    <script>
+      try {
+        var saved = localStorage.getItem('theme');
+        var light = saved ? saved === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (light) document.documentElement.classList.remove('dark');
+      } catch (e) {}
+    </script>
 
-        <!-- bootstrap -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-
-        <link href="../../styles.css" rel="stylesheet">
-
-        <title>Bible search</title>
-        <link rel="icon" type="image/x-icon" href="../../favicon.ico"
-
+    <link rel="preload" href="/fonts/eb-garamond-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link href="/tailwind.css" rel="stylesheet">
   </head>
 
-  <body class='container'>
+  <body class="min-h-dvh bg-ground text-ink antialiased">
 
-    <h1 class='text-center display-1'>
-      What does the Bible say?
-    </h1>
-    
-    <hr class="border border-primary border-2 opacity-75">
+    <div class="mx-auto max-w-3xl px-5 sm:px-8">
 
-    <br><br>
+      <header class="relative flex items-start justify-between pt-0">
+        <div class="flex items-start gap-4">
+          <span class="ribbon block h-16 w-7 shrink-0 bg-rubric" aria-hidden="true"></span>
+          <h1 class="pt-4 text-3xl font-medium tracking-tight sm:text-4xl">Bible search</h1>
+        </div>
 
+        <button type="button" id="theme-toggle" aria-label="Switch to light theme"
+          class="caps mt-4 inline-flex min-h-11 items-center gap-2 px-1 text-lg text-ink-soft transition-colors duration-200 hover:text-ink">
+          <svg class="hidden h-[1.1em] w-[1.1em] dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+          </svg>
+          <svg class="h-[1.1em] w-[1.1em] dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />
+          </svg>
+          <span class="hidden dark:inline">Light</span>
+          <span class="dark:hidden">Dark</span>
+        </button>
+      </header>
 
-    <div>
+      <main class="pb-20">
 
-      <form action="/" method="POST">
+        <form action="/#results" method="GET" class="rule-double mt-10 pt-6 sm:mt-12">
+          <p class="max-w-prose text-pretty text-lg italic text-ink-soft">
+            Find a passage by reference, or a word anywhere in the text.
+          </p>
 
-        <select class="form-select" name="language" id="language">
-          <% languages.forEach((language)=> { %>
-          <option value="<%= language %>" <% if (previousLanguage === language) { %>selected<% } %>>
-            <%= formatLang(language) %> 
-          </option>
+          <div class="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-6">
+            <div class="col-span-2 sm:col-span-3">
+              <label for="book" class="slot-label">Book</label>
+              <select class="field" name="book" id="book" autocomplete="off">
+                <option value="" <% if (!previousBook) { %>selected<% } %>>All books</option>
+                <% bibleBooksArray.forEach((book)=> { %>
+                <option value="<%= book %>" <% if (previousBook === book) { %>selected<% } %>><%= formatLang(book) %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="sm:col-span-1">
+              <label for="chapter" class="slot-label">Chapter</label>
+              <input class="field" autocomplete="off" type="text" name="chapter" value="<%= previousChapter %>" id="chapter" placeholder="1 or 1-3">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label for="verse" class="slot-label">Verse</label>
+              <input class="field" autocomplete="off" type="text" name="verse" value="<%= previousVerse %>" id="verse" placeholder="1 or 1-5">
+            </div>
+
+            <div class="col-span-2 sm:col-span-4">
+              <label for="words" class="slot-label">Containing the word</label>
+              <input class="field" autocomplete="off" type="text" name="words" value="<%= previousWords %>" id="words" placeholder="light">
+            </div>
+
+            <div class="col-span-2">
+              <label for="language" class="slot-label">Language</label>
+              <select class="field" name="language" id="language">
+                <% languages.forEach((language)=> { %>
+                <option value="<%= language %>" <% if (previousLanguage === language) { %>selected<% } %>><%= formatLang(language) %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <p class="mt-3 text-base text-ink-soft">Ranges work too: <span class="italic">1-3</span> for chapters or verses.</p>
+
+          <button type="submit"
+            class="caps mt-6 min-h-12 w-full rounded-sm bg-rubric px-8 text-xl font-semibold text-rubric-ink transition duration-200 hover:brightness-110 active:translate-y-px sm:w-auto">
+            Find verses
+          </button>
+        </form>
+
+        <section id="results" aria-label="Results" class="mt-14 scroll-mt-6 border-t border-line pt-8">
+
+          <% if (error) { %>
+          <p role="alert" class="text-xl"><%= error %></p>
+
+          <% } else if (!searched) { %>
+          <p class="max-w-prose text-pretty text-xl leading-relaxed">
+            Try
+            <% samples.forEach((sample, i)=> { %><a class="text-rubric underline decoration-line hover:decoration-rubric" href="<%= href(sample.params) %>"><%= sample.label %></a><%= i < samples.length - 2 ? ', ' : (i === samples.length - 2 ? ' or ' : '.') %><% }); %>
+          </p>
+
+          <% } else if (verseAmount === 0) { %>
+          <div role="status">
+            <p class="text-2xl font-medium">No verses found</p>
+            <p class="mt-2 max-w-prose text-pretty text-xl text-ink-soft">
+              <%= reference %><% if (query.words) { %> has no verse containing &ldquo;<%= query.words %>&rdquo;<% } else { %> has no matching verses<% } %> in <%= formatLang(query.language) %>.
+            </p>
+            <% if (widen.length) { %>
+            <ul class="mt-4 space-y-1 text-xl">
+              <% widen.forEach((option)=> { %>
+              <li><a class="text-rubric underline decoration-line hover:decoration-rubric" href="<%= href(option.params) %>"><%= option.label %></a></li>
+              <% }); %>
+            </ul>
+            <% } %>
+          </div>
+
+          <% } else { %>
+          <p role="status" class="caps text-lg text-ink-soft">
+            <span class="font-semibold text-ink"><%= verseAmount %><%= truncated ? '+' : '' %></span> <%= verseAmount === 1 ? 'verse' : 'verses' %>
+            &middot; <%= reference %><% if (query.words) { %> &middot; &ldquo;<%= query.words %>&rdquo;<% } %> &middot; <%= formatLang(query.language) %>
+          </p>
+
+          <% let lastGroup = ''; %>
+          <% verses.forEach((verse)=> {
+               const group = verse.Book + ':' + verse.Chapter;
+               const isNewGroup = group !== lastGroup;
+               lastGroup = group;
+          %>
+          <% if (isNewGroup) { %>
+          <h2 class="mt-12 flex items-baseline gap-4 border-b border-line pb-2 first-of-type:mt-8">
+            <span class="caps text-xl text-ink-soft"><%= bibleBooks[verse.Book] %></span>
+            <span class="text-5xl font-medium leading-none text-rubric"><%= verse.Chapter %></span>
+          </h2>
+          <% } %>
+          <p class="mt-4 grid grid-cols-[2.75rem_minmax(0,1fr)] items-baseline">
+            <span class="pr-3 text-right text-lg font-medium text-rubric"><%= verse.Versecount %></span>
+            <span class="max-w-[62ch] text-pretty text-xl leading-[1.65] sm:text-[1.375rem]"><%- highlightSearchResult(verse.verse, searchQuery) %></span>
+          </p>
           <% }); %>
-        </select>
 
-        <br><br>
+          <% if (truncated) { %>
+          <p class="mt-10 border-t border-line pt-4 text-lg italic text-ink-soft">
+            Showing the first 500 verses. Choose a book or chapter to narrow the search.
+          </p>
+          <% } %>
+          <% } %>
 
+        </section>
+      </main>
 
-        <div class="form-floating mb-3">
-          <select class="form-select" autocomplete="off" type="text" name="book" value="<%= previousBook %>" id="book" placeholder="Book name">
-           <% bibleBooksArray.forEach((book)=> { %>
-          <option value="<%= book %>" <% if (previousBook === book) { %>selected<% } %>>
-            <%= formatLang(book) %> 
-          </option>
-          <% }); %>
-          </select>           
-
-          <label for="book">Book</label>
-        </div>
-
-        <div class="form-floating mb-3">
-          <input class="form-control" autocomplete="off" type="text" name="chapter" value="<%= previousChapter %>" id="chapter" placeholder="Chapter">
-          <label for="chapter">Chapter</label>
-        </div>
-
-        <div class="form-floating mb-3">
-          <input class="form-control" autocomplete="off" type="text" name="verse" value="<%= previousVerse %>" id="verse" placeholder="Verse">
-          <label for="verse">Verse</label>
-        </div>
-
-        <div class="form-floating mb-3">
-          <input class="form-control" autocomplete="off" type="text" name="words" value="<%= previousWords %>" id="words" placeholder="Key words">
-          <label for="words">Key words</label>
-        </div>
-
-        <br>
-
-        <input class="btn btn-primary mb-3" type="submit" name="submit" placeholder="Submit">
-      </form>
-
-    <hr>
-
-    <div>
-      <%= verseAmount %> verses
-    </div>
-
-    </div>
-    <div id="searchResults">
-      
-      <ul>
-        <% verses.forEach((verse)=> { %>
-        <li style="font-size: 1rem;"> 
-          <strong> <%= bibleBooks[verse.Book] %>, <%= verse.Chapter %>:<%= verse.Versecount %> </strong> <%- highlightSearchResult(verse.verse, searchQuery) %>  
-        </li>
-        <% }); %>
-      </ul>
+      <footer class="border-t border-line py-6">
+        <p class="text-base text-ink-soft">
+          <a href="https://github.com/Edesem/biblesearch" class="underline decoration-line hover:text-ink hover:decoration-rubric">Source code</a>
+        </p>
+      </footer>
 
     </div>
 
-    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-    <footer>
-      <p class="text-center link-opacity-75">
-        <a href="https://github.com/Edesem/biblesearch">Source code</a>
-      </p>
-    </footer>
-
+    <script src="/scripts.js"></script>
   </body>
-  <script src="../../scripts.js"></script>
 </html>
