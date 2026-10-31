@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@source "./views";
+@source "./scripts.js";
+
+/* Dark is the default; `.dark` on <html> switches it on. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Palette: ink-blue night, one vermilion "ribbon marker" accent.
+  Semantic tokens swap per theme so markup stays theme-agnostic.
+*/
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans Tamil", "Noto Sans Telugu", sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Charter, "Noto Serif", "Noto Serif Devanagari", "Noto Serif Bengali", Georgia, serif;
+
+  --color-ground: var(--ground);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ribbon: var(--ribbon);
+  --color-ribbon-ink: var(--ribbon-ink);
+  --color-mark: var(--mark);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: light;
+  --ground: oklch(97% 0.008 255);
+  --raised: oklch(100% 0 0);
+  --sunken: oklch(94.5% 0.01 255);
+  --line: oklch(88% 0.015 255);
+  --ink: oklch(24% 0.03 255);
+  --ink-soft: oklch(48% 0.025 255);
+  --ribbon: oklch(52% 0.2 28);
+  --ribbon-ink: oklch(99% 0.01 28);
+  --mark: oklch(90% 0.1 28 / 0.65);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --ground: oklch(17% 0.03 258);
+  --raised: oklch(21.5% 0.035 258);
+  --sunken: oklch(14.5% 0.028 258);
+  --line: oklch(30% 0.035 258);
+  --ink: oklch(94% 0.012 255);
+  --ink-soft: oklch(72% 0.025 255);
+  --ribbon: oklch(68% 0.19 28);
+  --ribbon-ink: oklch(16% 0.03 258);
+  --mark: oklch(68% 0.19 28 / 0.28);
+}
+
+@layer base {
+  html {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  ::selection {
+    background: var(--ribbon);
+    color: var(--ribbon-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ribbon);
+    outline-offset: 2px;
+  }
+
+  select,
+  input {
+    color-scheme: inherit;
+  }
+}
+
+@layer components {
+  /* Search hits, emitted by the server as <span class="highlight"> */
+  .highlight {
+    background: var(--mark);
+    color: inherit;
+    font-weight: 600;
+    border-radius: 0.2em;
+    padding: 0 0.15em;
+    box-shadow: inset 0 -2px 0 var(--ribbon);
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-line bg-sunken px-3 py-2.5 text-base text-ink outline-none transition-colors duration-200;
+    @apply placeholder:text-ink-soft/70 hover:border-ink-soft/50 focus:border-ribbon;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-ink-soft;
+  }
+
+  .verse-row {
+    animation: rise 0.5s var(--ease-out-expo) backwards;
+    animation-delay: calc(min(var(--i, 0), 12) * 28ms);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verse-row {
+    animation: none;
+  }
+}
+
+/* Scrollbars follow the palette */
+* {
+  scrollbar-color: var(--line) transparent;
+}
