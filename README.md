@@ -1,26 +1,77 @@
 # Bible Search
-## A Bible web app
-### [Live Demo](https://biblesearch.onrender.com)
-### [Video Demo](https://youtu.be/kHLjc7vCNWg)
 
-The Bible search web application you described is built using Node.js, SQLite3, HTML, and CSS (Bootstrap). Its purpose is to allow users to view and search the Bible in different languages, with the ability to specify specific content they are looking for.
+Read and search the Bible in 17 languages, by reference or by word. Styled like a printed reference Bible, with light and dark themes.
 
-The backend of the application is powered by Node.js, specifically the src/index.js file. This file handles GET and POST requests, as well as other backend tasks. It also includes a books.txt file which contains the names of all the books in the Protestant Bible, loaded into dictionaries and an array. This allows users to enter the name of a book and retrieve its corresponding numeric value, as the database's book column uses numeric values.
+**[Live demo](https://searchthebible.vercel.app)** · [Video demo](https://youtu.be/kHLjc7vCNWg)
 
-There are three functions defined within the application:
+## Features
 
-highlightedResult: This function highlights the keyword searched for by making it red. It is used to visually emphasize the search term in the search results.
+- **Look up a passage** by book, chapter and verse, including ranges such as `1-3`
+- **Search for a word or phrase** in one book or across the whole Bible, with matches highlighted
+- **Switch languages:** Afrikaans, Bengali, English, Gujarati, Hindi, Hungarian, Indonesian, Kannada, Malayalam, Nepali, Oriya, Punjabi, Sepedi, Tamil, Telugu, Xhosa and Zulu
+- **Share a search:** every search has its own URL, for example `/?book=John&chapter=3&verse=16&language=english.db`
+- **Choose a theme:** follows the device setting on the first visit, then remembers the visitor's choice
 
-guessInput: This function helps users by allowing them to enter abbreviated book names. For example, entering "Gen" instead of "Genesis" or "Ecc" instead of "Ecclesiastes" will still yield the desired results.
+A search shows at most 500 verses. If there are more, the page asks the reader to narrow it down.
 
-formatLang: This function formats the language selector, capitalizing each language and adding the ".db" extension at the end. For example, it transforms "english" to "English.db".
+## Tech stack
 
-The app's default GET route initially displays no verses, but retains the previous user's entries (such as the last selected book or language) for ease of use.
+- Node.js and Express, with server-rendered EJS templates
+- SQLite, with one read-only database per language
+- Tailwind CSS v4
+- Jest and Supertest for tests
+- Deployed on Vercel
 
-The app's POST route retrieves user input, stores it in the corresponding previous entries, and then queries the database. It begins with a default SQL string and checks if the user has searched for a range of chapters or verses (e.g., "1-5" in the chapters/verses input). If a range is specified, the query is modified accordingly to display the correct results.
+## Getting started
 
-After retrieving the results, each result is added to an array and sent to the .ejs template file. The template file, src/pages/index.ejs, serves as the website's layout. It checks if the previous language is the same as the current language selected. If they are the same, nothing is done. Otherwise, the new language is posted.
+```sh
+npm install
+npm run dev
+```
 
-For each verse, the template formats and displays the book name, chapter, verse, and the actual verse text. If there was a query with keywords, the keywords in the verse are highlighted.
+Then open <http://127.0.0.1:3030>. Set `PORT` to use a different port.
 
-In summary, the web application allows users to search and view Bible verses in different languages. The backend handles requests and database queries, while the frontend template displays the search results and provides a user-friendly interface for selecting books and languages.
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Build the CSS, then start the server |
+| `npm start` | Start the server without building the CSS |
+| `npm run build:css` | Build `src/tailwind.css` from `src/input.css` |
+| `npm run watch:css` | Rebuild the CSS on every change |
+| `npm test` | Run the tests |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Type-check with TypeScript |
+
+`src/tailwind.css` is committed and served as is, so rebuild it and commit the result after changing styles.
+
+## Project layout
+
+```
+databases/               One SQLite database per language
+src/index.js             Express app: routes, query building, helpers
+src/views/pages/index.ejs  The page template
+src/scripts.js           Theme toggle
+src/input.css            Tailwind source and theme tokens
+src/tailwind.css         Built stylesheet
+src/books.txt            The 66 book names, in canonical order
+tests/app.test.js        Helper and route tests
+vercel.json              Vercel build and routing config
+```
+
+## Adding a language
+
+Add a `<language>.db` file to `databases/`. The server lists that folder at startup, so the language appears in the dropdown after a restart. Each database needs this table:
+
+```sql
+CREATE TABLE `bible` (
+  `Book` int(2),         -- zero-based position in src/books.txt
+  `Chapter` int(3),
+  `Versecount` int(3),   -- the verse number
+  `verse` varchar(528)   -- the verse text
+);
+```
+
+## License
+
+[GNU GPL v3](LICENSE.txt)
