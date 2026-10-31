@@ -1,11 +1,13 @@
-// Theme toggle: dark by default, light on request, remembered per browser
+// Theme toggle: dark by default, the device setting on first visit,
+// then whatever the visitor last chose
 (function () {
   const root = document.documentElement;
   const button = document.getElementById('theme-toggle');
   if (!button) return;
 
   function sync() {
-    button.setAttribute('aria-pressed', String(root.classList.contains('dark')));
+    const next = root.classList.contains('dark') ? 'light' : 'dark';
+    button.setAttribute('aria-label', 'Switch to ' + next + ' theme');
   }
 
   button.addEventListener('click', () => {

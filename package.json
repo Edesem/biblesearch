@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@fontsource-variable/eb-garamond": "^5.3.0",
     "@tailwindcss/cli": "^4.3.3",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
