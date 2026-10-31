@@ -1,5 +1,4 @@
 // Import
-const http = require('http');
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -14,13 +13,13 @@ const hostname = '127.0.0.1'
 const PORT = process.env.PORT || 3030;
 
 // Define previous entries
-previousBook = '';
-previousChapter = '';
-previousVerse = '';
-previousWords = '';
-previousLanguage = 'english.db';
+let previousBook = '';
+let previousChapter = '';
+let previousVerse = '';
+let previousWords = '';
+let previousLanguage = 'english.db';
 
-languages = []
+const languages = [];
 
 fs.readdir(DB_DIR, (err, files) => {
   if (err) {
@@ -51,7 +50,7 @@ app.use(bodyParser.json());
 // Read biblical books into dictionary
 const bibleBooks = {};
 const bibleNumbers = {};
-bibleBooksArray = [];
+const bibleBooksArray = [];
 
 fs.readFile(path.join(__dirname, 'books.txt'), 'utf8', (err, data) => {
   if (err) {
@@ -118,6 +117,8 @@ app.get('/', (req, res) => {
       previousVerse: previousVerse,
       previousWords: previousWords,
       previousLanguage: previousLanguage,
+      languages: languages,
+      bibleBooksArray: bibleBooksArray,
       formatLang: formatLang
     });
 });
@@ -131,17 +132,17 @@ app.post('/', (req, res) => {
   const inputData = req.body;
 
   // Get user input
-  book = inputData.book || '';
+  let book = inputData.book || '';
   
   // If book is has input, then guess input
   if (book) {
     book = guessInput(book);
   }
 
-  chapter = inputData.chapter;
-  verse = inputData.verse;
-  words = inputData.words;
-  language = inputData.language;
+  let chapter = inputData.chapter;
+  let verse = inputData.verse;
+  const words = inputData.words;
+  const language = inputData.language;
 
   // Set previous enteries
   previousBook = book
@@ -159,7 +160,7 @@ app.post('/', (req, res) => {
   
 
   // Set search query
-  sql = 'SELECT * FROM bible WHERE Book = COALESCE(?, Book) AND verse LIKE COALESCE(?, verse)';
+  let sql = 'SELECT * FROM bible WHERE Book = COALESCE(?, Book) AND verse LIKE COALESCE(?, verse)';
   const word = '%' + words + '%'
 
   const input = [bibleNumbers[book], word]
@@ -212,6 +213,8 @@ app.post('/', (req, res) => {
       previousVerse: previousVerse,
       previousWords: previousWords,
       previousLanguage: previousLanguage,
+      languages: languages,
+      bibleBooksArray: bibleBooksArray,
       formatLang: formatLang
     }); 
 
@@ -235,4 +238,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = app;
+module.exports = Object.assign(app, { highlightSearchResult, guessInput, formatLang });
