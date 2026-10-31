@@ -1,108 +1,144 @@
 <!DOCTYPE html>
-
-<html lang="en" data-bs-theme="light">
-
+<html lang="en" class="dark">
   <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+    <meta name="color-scheme" content="dark light">
+    <title>Bible search</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
-        <meta charset="utf-8">
-        <meta name="viewport" content="initial-scale=1, width=device-width">
+    <!-- Apply the saved theme before first paint; dark unless the visitor chose light -->
+    <script>
+      try {
+        if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+      } catch (e) {}
+    </script>
 
-        <!-- bootstrap -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-
-        <link href="../../styles.css" rel="stylesheet">
-
-        <title>Bible search</title>
-        <link rel="icon" type="image/x-icon" href="../../favicon.ico"
-
+    <link href="/tailwind.css" rel="stylesheet">
   </head>
 
-  <body class='container'>
+  <body class="min-h-dvh bg-ground text-ink antialiased">
 
-    <h1 class='text-center display-1'>
-      What does the Bible say?
-    </h1>
-    
-    <hr class="border border-primary border-2 opacity-75">
+    <header class="border-b border-line">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <a href="/" class="flex items-center gap-3 rounded-md">
+          <svg viewBox="0 0 24 24" class="h-6 w-6 text-ribbon" fill="currentColor" aria-hidden="true">
+            <path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4.5L5 22V3a1 1 0 0 1 1-1z" />
+          </svg>
+          <span class="text-lg font-semibold tracking-tight">Bible search</span>
+        </a>
 
-    <br><br>
+        <button type="button" id="theme-toggle" aria-pressed="true"
+          class="inline-flex items-center gap-2 rounded-full border border-line bg-raised px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors duration-200 hover:border-ink-soft/50 hover:text-ink">
+          <svg class="hidden h-4 w-4 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+          </svg>
+          <svg class="h-4 w-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />
+          </svg>
+          <span class="hidden dark:inline">Light mode</span>
+          <span class="dark:hidden">Dark mode</span>
+        </button>
+      </div>
+    </header>
 
+    <main class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-14 lg:py-14">
 
-    <div>
+      <section aria-labelledby="search-heading" class="lg:sticky lg:top-8 lg:self-start">
+        <h1 id="search-heading" class="text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+          What does the Bible say?
+        </h1>
 
-      <form action="/" method="POST">
+        <form action="/" method="POST" class="mt-8 space-y-5">
+          <div>
+            <label for="language" class="field-label">Language</label>
+            <select class="field" name="language" id="language">
+              <% languages.forEach((language)=> { %>
+              <option value="<%= language %>" <% if (previousLanguage === language) { %>selected<% } %>>
+                <%= formatLang(language) %>
+              </option>
+              <% }); %>
+            </select>
+          </div>
 
-        <select class="form-select" name="language" id="language">
-          <% languages.forEach((language)=> { %>
-          <option value="<%= language %>" <% if (previousLanguage === language) { %>selected<% } %>>
-            <%= formatLang(language) %> 
-          </option>
+          <div>
+            <label for="book" class="field-label">Book</label>
+            <select class="field" autocomplete="off" name="book" id="book">
+              <% bibleBooksArray.forEach((book)=> { %>
+              <option value="<%= book %>" <% if (previousBook === book) { %>selected<% } %>>
+                <%= formatLang(book) %>
+              </option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="chapter" class="field-label">Chapter</label>
+              <input class="field" autocomplete="off" type="text" inputmode="numeric" name="chapter" value="<%= previousChapter %>" id="chapter" placeholder="1 or 1-3">
+            </div>
+            <div>
+              <label for="verse" class="field-label">Verse</label>
+              <input class="field" autocomplete="off" type="text" inputmode="numeric" name="verse" value="<%= previousVerse %>" id="verse" placeholder="1 or 1-5">
+            </div>
+          </div>
+
+          <div>
+            <label for="words" class="field-label">Key words</label>
+            <input class="field" autocomplete="off" type="text" name="words" value="<%= previousWords %>" id="words" placeholder="e.g. light">
+          </div>
+
+          <button type="submit" name="submit"
+            class="w-full rounded-lg bg-ribbon px-4 py-3 text-base font-semibold text-ribbon-ink transition duration-200 hover:brightness-110 active:scale-[0.99]">
+            Search
+          </button>
+        </form>
+      </section>
+
+      <section aria-labelledby="results-heading" class="min-w-0">
+        <div class="flex items-baseline justify-between gap-4 border-b border-line pb-4">
+          <h2 id="results-heading" class="text-sm font-medium text-ink-soft">Results</h2>
+          <p class="text-sm tabular-nums text-ink-soft" aria-live="polite">
+            <span class="font-semibold text-ink"><%= verseAmount %></span> <%= verseAmount === 1 ? 'verse' : 'verses' %>
+          </p>
+        </div>
+
+        <% if (verses.length === 0) { %>
+        <div class="py-16 text-center sm:py-24">
+          <svg viewBox="0 0 24 24" class="mx-auto h-8 w-8 text-ink-soft/60" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16z" />
+            <path d="M4 21.5A2.5 2.5 0 0 1 6.5 19H20" />
+          </svg>
+          <p class="mt-4 text-lg font-medium">Nothing to show yet</p>
+          <p class="mx-auto mt-1 max-w-sm text-pretty text-ink-soft">
+            Pick a book and add a chapter, a verse range, or a word to look for.
+          </p>
+        </div>
+        <% } else { %>
+        <ol class="divide-y divide-line">
+          <% verses.forEach((verse, i)=> { %>
+          <li class="verse-row grid gap-1 py-5 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-6" style="--i: <%= i %>">
+            <p class="text-sm font-semibold tabular-nums text-ribbon sm:pt-1">
+              <%= bibleBooks[verse.Book] %> <%= verse.Chapter %>:<%= verse.Versecount %>
+            </p>
+            <p class="max-w-[68ch] text-pretty font-serif text-lg leading-relaxed sm:text-xl sm:leading-relaxed">
+              <%- highlightSearchResult(verse.verse, searchQuery) %>
+            </p>
+          </li>
           <% }); %>
-        </select>
+        </ol>
+        <% } %>
+      </section>
 
-        <br><br>
+    </main>
 
-
-        <div class="form-floating mb-3">
-          <select class="form-select" autocomplete="off" type="text" name="book" value="<%= previousBook %>" id="book" placeholder="Book name">
-           <% bibleBooksArray.forEach((book)=> { %>
-          <option value="<%= book %>" <% if (previousBook === book) { %>selected<% } %>>
-            <%= formatLang(book) %> 
-          </option>
-          <% }); %>
-          </select>           
-
-          <label for="book">Book</label>
-        </div>
-
-        <div class="form-floating mb-3">
-          <input class="form-control" autocomplete="off" type="text" name="chapter" value="<%= previousChapter %>" id="chapter" placeholder="Chapter">
-          <label for="chapter">Chapter</label>
-        </div>
-
-        <div class="form-floating mb-3">
-          <input class="form-control" autocomplete="off" type="text" name="verse" value="<%= previousVerse %>" id="verse" placeholder="Verse">
-          <label for="verse">Verse</label>
-        </div>
-
-        <div class="form-floating mb-3">
-          <input class="form-control" autocomplete="off" type="text" name="words" value="<%= previousWords %>" id="words" placeholder="Key words">
-          <label for="words">Key words</label>
-        </div>
-
-        <br>
-
-        <input class="btn btn-primary mb-3" type="submit" name="submit" placeholder="Submit">
-      </form>
-
-    <hr>
-
-    <div>
-      <%= verseAmount %> verses
-    </div>
-
-    </div>
-    <div id="searchResults">
-      
-      <ul>
-        <% verses.forEach((verse)=> { %>
-        <li style="font-size: 1rem;"> 
-          <strong> <%= bibleBooks[verse.Book] %>, <%= verse.Chapter %>:<%= verse.Versecount %> </strong> <%- highlightSearchResult(verse.verse, searchQuery) %>  
-        </li>
-        <% }); %>
-      </ul>
-
-    </div>
-
-    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-    <footer>
-      <p class="text-center link-opacity-75">
-        <a href="https://github.com/Edesem/biblesearch">Source code</a>
+    <footer class="border-t border-line">
+      <p class="mx-auto max-w-6xl px-5 py-6 text-sm text-ink-soft sm:px-8">
+        <a href="https://github.com/Edesem/biblesearch" class="underline decoration-line underline-offset-4 transition-colors hover:text-ink hover:decoration-ribbon">Source code</a>
       </p>
     </footer>
 
+    <script src="/scripts.js"></script>
   </body>
-  <script src="../../scripts.js"></script>
 </html>
