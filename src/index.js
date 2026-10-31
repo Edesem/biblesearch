@@ -11,13 +11,8 @@ const DB_DIR = path.join(__dirname, '..', 'databases');
 const hostname = '127.0.0.1'
 //const port = 3000
 const PORT = process.env.PORT || 3030;
-
-// Define previous entries
-let previousBook = '';
-let previousChapter = '';
-let previousVerse = '';
-let previousWords = '';
-let previousLanguage = 'english.db';
+const DEFAULT_LANGUAGE = 'english.db';
+const RESULT_LIMIT = 500;
 
 const languages = [];
 
@@ -67,10 +62,10 @@ fs.readFile(path.join(__dirname, 'books.txt'), 'utf8', (err, data) => {
     bibleBooks[bookNumber] = title.trim();
     bibleNumbers[title.trim()] = bookNumber;
     bibleBooksArray.push(title.trim())
-  }); 
+  });
 });
 
-  
+
 
 
 //////////// Functions /////////////////
@@ -80,10 +75,13 @@ function highlightSearchResult(result, searchQuery) {
 
   if (!searchQuery) {
     return result;
-  } 
+  }
+
+  // Escape regex characters so input like "(" is searched literally
+  const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   const highlightedResult = result.replace(
-    new RegExp(searchQuery, "gi"),
+    new RegExp(escaped, "gi"),
     '<span class="highlight">$&</span>'
   );
 
@@ -102,129 +100,129 @@ function formatLang(language) {
   return language.charAt(0).toUpperCase() + language.slice(1);
 }
 
+// Integer from user input, or null when blank/invalid so SQL ignores the filter
+function toInt(value) {
+  const n = parseInt(value, 10);
+  return Number.isNaN(n) ? null : n;
+}
 
+// Add a single value or an "a-b" range filter to the query
+function addRange(sql, input, column, raw) {
+  if (raw.includes('-')) {
+    const [from, to] = raw.split('-');
+    input.push(toInt(from), toInt(to));
+    return sql + ` AND ${column} BETWEEN COALESCE(?, ${column}) AND COALESCE(?, ${column})`;
+  }
+  input.push(toInt(raw));
+  return sql + ` AND ${column} = COALESCE(?, ${column})`;
+}
 
-//////////////////// APP GET/POST ////////////////////// 
+// Build the values every render of the page needs
+function viewData(query, extra) {
+  return Object.assign({
+    verseAmount: 0,
+    verses: [],
+    searched: false,
+    truncated: false,
+    error: null,
+    query: query,
+    previousBook: query.book,
+    previousChapter: query.chapter,
+    previousVerse: query.verse,
+    previousWords: query.words,
+    previousLanguage: query.language,
+    searchQuery: query.words,
+    languages: languages,
+    bibleBooks: bibleBooks,
+    bibleBooksArray: bibleBooksArray,
+    formatLang: formatLang,
+    highlightSearchResult: highlightSearchResult
+  }, extra);
+}
 
-// Index
-app.get('/', (req, res) => {
+// Clean up whatever the browser sent, from either the query string or a POST body
+function readQuery(params) {
+  const text = (value) => (typeof value === 'string' ? value.trim() : '');
+  let book = text(params.book);
 
-    res.render('pages/index', {
-      verseAmount: 0,
-      verses: [],
-      previousBook: previousBook,
-      previousChapter: previousChapter,
-      previousVerse: previousVerse,
-      previousWords: previousWords,
-      previousLanguage: previousLanguage,
-      languages: languages,
-      bibleBooksArray: bibleBooksArray,
-      formatLang: formatLang
-    });
-});
-
-
-
-
-// Post reqeust
-app.post('/', (req, res) => {
-  const verses = [];
-  const inputData = req.body;
-
-  // Get user input
-  let book = inputData.book || '';
-  
-  // If book is has input, then guess input
+  // If book has input, then guess input
   if (book) {
-    book = guessInput(book);
+    book = guessInput(book) || '';
   }
 
-  let chapter = inputData.chapter;
-  let verse = inputData.verse;
-  const words = inputData.words;
-  const language = inputData.language;
+  const language = languages.includes(params.language) ? params.language : DEFAULT_LANGUAGE;
 
-  // Set previous enteries
-  previousBook = book
-  previousChapter = chapter
-  previousVerse = verse
-  previousWords = words
-  previousLanguage = language
+  return {
+    book: book,
+    chapter: text(params.chapter),
+    verse: text(params.verse),
+    words: text(params.words),
+    language: language
+  };
+}
+
+// Run a search and render the page
+function search(params, res, forceSearch) {
+  const query = readQuery(params);
+  const searched = forceSearch || ['book', 'chapter', 'verse', 'words'].some((key) => key in params);
+
+  if (!searched) {
+    return res.render('pages/index', viewData(query, {}));
+  }
 
   // Connect to db
-  let db = new sqlite.Database(path.join(DB_DIR, path.basename(language)), sqlite.OPEN_READONLY, (err) => {
+  const db = new sqlite.Database(path.join(DB_DIR, path.basename(query.language)), sqlite.OPEN_READONLY, (err) => {
     if (err) {
-      return console.error(err.message);
+      console.error(err.message);
     }
   });
-  
 
   // Set search query
-  let sql = 'SELECT * FROM bible WHERE Book = COALESCE(?, Book) AND verse LIKE COALESCE(?, verse)';
-  const word = '%' + words + '%'
+  let sql = 'SELECT * FROM bible WHERE Book = COALESCE(?, Book) AND verse LIKE ?';
+  const input = [query.book ? bibleNumbers[query.book] : null, '%' + query.words + '%'];
 
-  const input = [bibleNumbers[book], word]
-  
-  // Check if a single or range of verses were given
-  if (verse.includes('-')) {
-    verse = verse.split('-')
-    sql += ' AND Versecount BETWEEN ? AND ? ';
-    input.push(parseInt(verse[0]), parseInt(verse[1]))
-  }
-  else {
-    sql += ' AND Versecount = COALESCE(?, Versecount)';
-    input.push(parseInt(verse))
-  }
-
-  // Check if a single or range of chapters were given
-  if (chapter.includes('-')) {
-    chapter = chapter.split('-')
-    sql += ' AND Chapter BETWEEN ? AND ? ';
-    input.push(parseInt(chapter[0]), parseInt(chapter[1]))
-  }
-  else {
-    sql += ' AND Chapter = COALESCE(?, Chapter)';
-    input.push(parseInt(chapter))
-  }
+  sql = addRange(sql, input, 'Versecount', query.verse);
+  sql = addRange(sql, input, 'Chapter', query.chapter);
+  sql += ' ORDER BY Book, Chapter, Versecount LIMIT ' + (RESULT_LIMIT + 1);
 
   // Get query
   db.all(sql, input, (err, rows) => {
-
-    if (err) {
-      throw err;
-    }
-
     db.close();
 
-    // Put each result into an array
-    rows.forEach((row) => {
-      verses.push(row)
-    });
+    if (err) {
+      console.error(err.message);
+      return res.status(500).render('pages/index', viewData(query, {
+        searched: true,
+        error: 'The search could not be run. Please try again.'
+      }));
+    }
+
+    const truncated = rows.length > RESULT_LIMIT;
+    const verses = truncated ? rows.slice(0, RESULT_LIMIT) : rows;
 
     // Render the results
-    res.render('pages/index', {
+    res.render('pages/index', viewData(query, {
+      searched: true,
       verseAmount: verses.length,
-      bibleBooks: bibleBooks,
-      verses: verses,
-      highlightSearchResult: highlightSearchResult,
-      searchQuery: words,
-      previousBook: previousBook,
-      previousChapter: previousChapter,
-      previousVerse: previousVerse,
-      previousWords: previousWords,
-      previousLanguage: previousLanguage,
-      languages: languages,
-      bibleBooksArray: bibleBooksArray,
-      formatLang: formatLang
-    }); 
-
+      truncated: truncated,
+      verses: verses
+    }));
   });
+}
+
+
+
+//////////////////// APP GET/POST //////////////////////
+
+// Index: searches live in the URL so they can be shared and bookmarked
+app.get('/', (req, res) => {
+  search(req.query, res, false);
 });
 
-
-
-
-
+// Post request kept for older clients and forms
+app.post('/', (req, res) => {
+  search(req.body || {}, res, true);
+});
 
 
 
