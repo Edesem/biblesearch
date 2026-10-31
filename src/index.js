@@ -2,11 +2,13 @@
 const http = require('http');
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const sqlite = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 
 // Define consts
 const app = express();
+const DB_DIR = path.join(__dirname, '..', 'databases');
 const hostname = '127.0.0.1'
 //const port = 3000
 const PORT = process.env.PORT || 3030;
@@ -20,7 +22,7 @@ previousLanguage = 'english.db';
 
 languages = []
 
-fs.readdir('../databases/', (err, files) => {
+fs.readdir(DB_DIR, (err, files) => {
   if (err) {
     console.error('Error reading directory:', err);
     return;
@@ -35,9 +37,10 @@ fs.readdir('../databases/', (err, files) => {
 
 // Set engine
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Serve static files from the '.' directory
-app.use(express.static('.'));
+app.use(express.static(__dirname));
 
 // Use url encoded
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -50,7 +53,7 @@ const bibleBooks = {};
 const bibleNumbers = {};
 bibleBooksArray = [];
 
-fs.readFile('books.txt', 'utf8', (err, data) => {
+fs.readFile(path.join(__dirname, 'books.txt'), 'utf8', (err, data) => {
   if (err) {
     return console.error(err.message);
   }
@@ -148,7 +151,7 @@ app.post('/', (req, res) => {
   previousLanguage = language
 
   // Connect to db
-  let db = new sqlite.Database('../databases/' + language, sqlite.OPEN_READONLY, (err) => {
+  let db = new sqlite.Database(path.join(DB_DIR, path.basename(language)), sqlite.OPEN_READONLY, (err) => {
     if (err) {
       return console.error(err.message);
     }
@@ -225,6 +228,11 @@ app.post('/', (req, res) => {
 /// Establish connection ///
 //app.listen(process.env.PORT || 3000, () => console.log('App available on http://' + hostname + ':' + port));
 
-app.listen(PORT, () => {
-  console.log(`server started on port http://${hostname}:${PORT}`);
-});
+// Vercel imports the app; only listen when run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`server started on port http://${hostname}:${PORT}`);
+  });
+}
+
+module.exports = app;
