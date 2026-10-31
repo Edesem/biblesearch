@@ -1,26 +1,27 @@
 // Import
-const http = require('http');
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const sqlite = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 
 // Define consts
 const app = express();
+const DB_DIR = path.join(__dirname, '..', 'databases');
 const hostname = '127.0.0.1'
 //const port = 3000
 const PORT = process.env.PORT || 3030;
 
 // Define previous entries
-previousBook = '';
-previousChapter = '';
-previousVerse = '';
-previousWords = '';
-previousLanguage = 'english.db';
+let previousBook = '';
+let previousChapter = '';
+let previousVerse = '';
+let previousWords = '';
+let previousLanguage = 'english.db';
 
-languages = []
+const languages = [];
 
-fs.readdir('../databases/', (err, files) => {
+fs.readdir(DB_DIR, (err, files) => {
   if (err) {
     console.error('Error reading directory:', err);
     return;
@@ -35,9 +36,10 @@ fs.readdir('../databases/', (err, files) => {
 
 // Set engine
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Serve static files from the '.' directory
-app.use(express.static('.'));
+app.use(express.static(__dirname));
 
 // Use url encoded
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -48,9 +50,9 @@ app.use(bodyParser.json());
 // Read biblical books into dictionary
 const bibleBooks = {};
 const bibleNumbers = {};
-bibleBooksArray = [];
+const bibleBooksArray = [];
 
-fs.readFile('books.txt', 'utf8', (err, data) => {
+fs.readFile(path.join(__dirname, 'books.txt'), 'utf8', (err, data) => {
   if (err) {
     return console.error(err.message);
   }
@@ -115,6 +117,8 @@ app.get('/', (req, res) => {
       previousVerse: previousVerse,
       previousWords: previousWords,
       previousLanguage: previousLanguage,
+      languages: languages,
+      bibleBooksArray: bibleBooksArray,
       formatLang: formatLang
     });
 });
@@ -128,17 +132,17 @@ app.post('/', (req, res) => {
   const inputData = req.body;
 
   // Get user input
-  book = inputData.book || '';
+  let book = inputData.book || '';
   
   // If book is has input, then guess input
   if (book) {
     book = guessInput(book);
   }
 
-  chapter = inputData.chapter;
-  verse = inputData.verse;
-  words = inputData.words;
-  language = inputData.language;
+  let chapter = inputData.chapter;
+  let verse = inputData.verse;
+  const words = inputData.words;
+  const language = inputData.language;
 
   // Set previous enteries
   previousBook = book
@@ -148,7 +152,7 @@ app.post('/', (req, res) => {
   previousLanguage = language
 
   // Connect to db
-  let db = new sqlite.Database('../databases/' + language, sqlite.OPEN_READONLY, (err) => {
+  let db = new sqlite.Database(path.join(DB_DIR, path.basename(language)), sqlite.OPEN_READONLY, (err) => {
     if (err) {
       return console.error(err.message);
     }
@@ -156,7 +160,7 @@ app.post('/', (req, res) => {
   
 
   // Set search query
-  sql = 'SELECT * FROM bible WHERE Book = COALESCE(?, Book) AND verse LIKE COALESCE(?, verse)';
+  let sql = 'SELECT * FROM bible WHERE Book = COALESCE(?, Book) AND verse LIKE COALESCE(?, verse)';
   const word = '%' + words + '%'
 
   const input = [bibleNumbers[book], word]
@@ -209,6 +213,8 @@ app.post('/', (req, res) => {
       previousVerse: previousVerse,
       previousWords: previousWords,
       previousLanguage: previousLanguage,
+      languages: languages,
+      bibleBooksArray: bibleBooksArray,
       formatLang: formatLang
     }); 
 
@@ -225,6 +231,11 @@ app.post('/', (req, res) => {
 /// Establish connection ///
 //app.listen(process.env.PORT || 3000, () => console.log('App available on http://' + hostname + ':' + port));
 
-app.listen(PORT, () => {
-  console.log(`server started on port http://${hostname}:${PORT}`);
-});
+// Vercel imports the app; only listen when run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`server started on port http://${hostname}:${PORT}`);
+  });
+}
+
+module.exports = Object.assign(app, { highlightSearchResult, guessInput, formatLang });
